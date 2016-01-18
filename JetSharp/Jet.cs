@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Security.Authentication;
 using System.Threading.Tasks;
+using System.Web;
 using JetBrains.Annotations;
 using JetSharp.Authentication;
 using JetSharp.Serialization;
@@ -28,7 +29,7 @@ namespace JetSharp
     }
 
     [CanBeNull]
-    public JetToken AutheticationToken => Authenticator?.Token;
+    public JetToken AuthenticationToken => Authenticator?.Token;
 
     public Jet()
     {
@@ -52,13 +53,26 @@ namespace JetSharp
       return instance;
     }
 
-    public async Task AuthenticateAsync([NotNull] string username, [NotNull] string password)
+    public async Task<JetToken> AuthenticateAsync([NotNull] string username, [NotNull] string password)
     {
       Username = username;
       Password = password;
-      Authenticator = new JetAuthenticator(
-        await ExecuteRequestAsync<JetTokenRequest, JetToken>(
-          new JetTokenRequest(username, password)).ConfigureAwait(false));
+
+      try
+      {
+        Authenticator = new JetAuthenticator(
+          await ExecuteRequestAsync<JetTokenRequest, JetToken>(
+            new JetTokenRequest(username, password)).ConfigureAwait(false));
+      }
+      catch (HttpException e)
+      {
+        if (e.ErrorCode == (int)HttpStatusCode.BadRequest)
+          throw new AuthenticationException("Invalid username or password");
+
+        throw;
+      }
+
+      return Authenticator.Token;
     }
 
     private async Task<TResponse> ExecuteAuthenticatedRequestAsync<TRequest, TResponse>(TRequest request)
@@ -78,10 +92,20 @@ namespace JetSharp
         { JsonSerializer = Serializer }
           .AddJsonBody(request)).ConfigureAwait(false);
 
-      if (response.StatusCode == HttpStatusCode.Unauthorized)
-        throw new AuthenticationException();
+      CheckResponseStatusCode(response);
 
       return JsonConvert.DeserializeObject<TResponse>(response.Content);
+    }
+
+    private static void CheckResponseStatusCode(IRestResponse response)
+    {
+      switch (response.StatusCode)
+      {
+        case HttpStatusCode.BadRequest:
+          throw new HttpException((int)response.StatusCode, response.StatusDescription);
+        case HttpStatusCode.Unauthorized:
+          throw new AuthenticationException();
+      }
     }
   }
 }

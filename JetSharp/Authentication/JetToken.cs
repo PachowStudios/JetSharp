@@ -12,7 +12,7 @@ namespace JetSharp.Authentication
     [JsonProperty("expires_on")]
     public DateTime ExpirationDate { get; private set; }
 
-    public bool IsExpired => ExpirationDate >= DateTime.Now;
+    public bool IsExpired => ExpirationDate <= DateTime.Now;
 
     public override string ToString()
       => $"Bearer {Token}";
