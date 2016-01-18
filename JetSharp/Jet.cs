@@ -44,6 +44,8 @@ namespace JetSharp
       });
     }
 
+    /*** Authentication ***/
+
     public static Task<Jet> CreateAsync([NotNull] string username, [NotNull] string password)
       => CreateAsync(new JetCredentials(username, password));
 
@@ -80,10 +82,25 @@ namespace JetSharp
       return Authenticator.Token;
     }
 
+    /*** Products ***/
+
     public async Task<HttpStatusCode> CreateProductAsync([NotNull] Product product)
+      => await ExecuteRequestForStatusCodeAsync(
+        new CreateProductRequest(product)).ConfigureAwait(false);
+
+    public async Task<HttpStatusCode> SetProductPrice(ProductPrice productPrice)
+      => await ExecuteRequestForStatusCodeAsync(
+        new SetProductPriceRequest(productPrice)).ConfigureAwait(false);
+
+    public async Task<HttpStatusCode> SetProductInventory(ProductInventory productInventory)
+      => await ExecuteRequestForStatusCodeAsync(
+        new SetProductInventoryRequest(productInventory)).ConfigureAwait(false);
+
+    /*** Request Handling ***/
+
+    private async Task<HttpStatusCode> ExecuteRequestForStatusCodeAsync(IJetRequest request)
     {
-      var response = await ExecuteAuthenticatedRequestAsync(
-        new PutProductRequest(product)).ConfigureAwait(false);
+      var response = await ExecuteAuthenticatedRequestAsync(request).ConfigureAwait(false);
 
       return response.StatusCode;
     }

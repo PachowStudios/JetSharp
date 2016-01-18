@@ -62,10 +62,11 @@
     <Compile Include="Authentication\JetToken.cs" />
     <Compile Include="JetRequest.cs" />
     <Compile Include="JetResourceAttribute.cs" />
+    <Compile Include="Products\FulfillmentNode.cs" />
     <Compile Include="Products\MapImplementation.cs" />
     <Compile Include="Products\Product.cs" />
     <Compile Include="Products\StandardProductCode.cs" />
-    <Compile Include="Products\PutProductRequest.cs" />
+    <Compile Include="Products\ProductRequests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Serialization\JsonDotNetSerializer.cs" />
     <Compile Include="Serialization\PrivatePropertyContractResolver.cs" />

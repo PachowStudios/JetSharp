@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json;
 
 namespace JetSharp.Products
@@ -34,6 +35,36 @@ namespace JetSharp.Products
     {
       get { return ((int)MapImplementation).ToString(); }
       set { MapImplementation = (MapImplementation)int.Parse(value); }
+    }
+  }
+
+  public class ProductPrice
+  {
+    [JsonIgnore]
+    public int SKU { get; set; }
+
+    [JsonProperty("price")]
+    public decimal Price { get; set; }
+
+    public ProductPrice(int sku, decimal price)
+    {
+      SKU = sku;
+      Price = price;
+    }
+  }
+
+  public class ProductInventory
+  {
+    [JsonIgnore]
+    public int SKU { get; set; }
+
+    [JsonProperty("fulfillment_nodes")]
+    public List<FulfillmentNode> FulfillmentNodes { get; set; }
+
+    public ProductInventory(int sku, params FulfillmentNode[] fulfillmentNodes)
+    {
+      SKU = sku;
+      FulfillmentNodes = fulfillmentNodes.ToList();
     }
   }
 }

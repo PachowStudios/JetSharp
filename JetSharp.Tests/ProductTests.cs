@@ -35,5 +35,29 @@ namespace JetSharp.Tests
 
       statusCode.Should().Be(HttpStatusCode.NoContent);
     }
+
+    [Test]
+    public async Task TestSetProductPriceAsync()
+    {
+      var jet = await Jet.CreateAsync(Credentials);
+
+      var statusCode = await jet.SetProductPrice(
+        new ProductPrice(TestSKU, 69.99m));
+
+      statusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Test]
+    public async Task TestSetProductInventoryAsync()
+    {
+      var jet = await Jet.CreateAsync(Credentials);
+
+      var statusCode = await jet.SetProductInventory(
+        new ProductInventory(
+          TestSKU,
+          new FulfillmentNode("fa3ff0cab54f4ac88bff1f5342f08380", 5)));
+
+      statusCode.Should().Be(HttpStatusCode.NoContent);
+    }
   }
 }

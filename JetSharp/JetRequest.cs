@@ -18,15 +18,14 @@ namespace JetSharp
 
     protected virtual object[] ResourceParameters { get; } = { };
 
-    public T Body { get; }
+    public abstract T Body { get; }
 
     object IJetRequest.Body => Body;
     Method IJetRequest.Method => ResourceInfo.Value.Method;
     string IJetRequest.Resource => BuiltResourcePath.Value;
 
-    protected JetRequest(T body)
+    protected JetRequest()
     {
-      Body = body;
       ResourceInfo = new Lazy<JetResourceAttribute>(this.GetJetResource);
       BuiltResourcePath = new Lazy<string>(BuildResourcePath);
     }
