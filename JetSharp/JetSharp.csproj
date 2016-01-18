@@ -54,19 +54,23 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Authentication\JetAuthenticator.cs" />
+    <Compile Include="Authentication\JetCredentials.cs" />
     <Compile Include="Authentication\JetTokenRequest.cs" />
     <Compile Include="Extensions\AttributeExtensions.cs" />
+    <Compile Include="Extensions\EnumExtensions.cs" />
     <Compile Include="Jet.cs" />
     <Compile Include="Authentication\JetToken.cs" />
     <Compile Include="JetRequest.cs" />
     <Compile Include="JetResourceAttribute.cs" />
+    <Compile Include="Products\MapImplementation.cs" />
+    <Compile Include="Products\Product.cs" />
+    <Compile Include="Products\StandardProductCode.cs" />
+    <Compile Include="Products\PutProductRequest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Serialization\JsonDotNetSerializer.cs" />
     <Compile Include="Serialization\PrivatePropertyContractResolver.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Products\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>

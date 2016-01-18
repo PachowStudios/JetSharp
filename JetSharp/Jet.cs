@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Web;
 using JetBrains.Annotations;
 using JetSharp.Authentication;
+using JetSharp.Products;
 using JetSharp.Serialization;
 using Newtonsoft.Json;
 using RestSharp;
@@ -19,8 +20,7 @@ namespace JetSharp
     private IRestClient RestClient { get; }
     private ISerializer Serializer { get; }
 
-    private string Username { get; set; }
-    private string Password { get; set; }
+    private JetCredentials Credentials { get; set; }
 
     private JetAuthenticator Authenticator
     {
@@ -44,25 +44,30 @@ namespace JetSharp
       });
     }
 
-    public static async Task<Jet> CreateAsync([NotNull] string username, [NotNull] string password)
+    public static Task<Jet> CreateAsync([NotNull] string username, [NotNull] string password)
+      => CreateAsync(new JetCredentials(username, password));
+
+    public static async Task<Jet> CreateAsync([NotNull] JetCredentials credentials)
     {
       var instance = new Jet();
 
-      await instance.AuthenticateAsync(username, password);
+      await instance.AuthenticateAsync(credentials);
 
       return instance;
     }
 
-    public async Task<JetToken> AuthenticateAsync([NotNull] string username, [NotNull] string password)
+    public Task<JetToken> AuthenticateAsync([NotNull] string username, [NotNull] string password)
+      => AuthenticateAsync(new JetCredentials(username, password));
+
+    public async Task<JetToken> AuthenticateAsync([NotNull] JetCredentials credentials)
     {
-      Username = username;
-      Password = password;
+      Credentials = credentials;
 
       try
       {
         Authenticator = new JetAuthenticator(
-          await ExecuteRequestAsync<JetTokenRequest, JetToken>(
-            new JetTokenRequest(username, password)).ConfigureAwait(false));
+          await ExecuteRequestAsync<JetToken>(
+            new JetTokenRequest(credentials)).ConfigureAwait(false));
       }
       catch (HttpException e)
       {
@@ -75,26 +80,51 @@ namespace JetSharp
       return Authenticator.Token;
     }
 
-    private async Task<TResponse> ExecuteAuthenticatedRequestAsync<TRequest, TResponse>(TRequest request)
-      where TRequest : JetRequest
+    public async Task<HttpStatusCode> CreateProductAsync([NotNull] Product product)
     {
-      if (!Authenticator?.IsTokenValid ?? false)
-        await AuthenticateAsync(Username, Password).ConfigureAwait(false);
+      var response = await ExecuteAuthenticatedRequestAsync(
+        new PutProductRequest(product)).ConfigureAwait(false);
 
-      return await ExecuteRequestAsync<TRequest, TResponse>(request).ConfigureAwait(false);
+      return response.StatusCode;
     }
 
-    private async Task<TResponse> ExecuteRequestAsync<TRequest, TResponse>(TRequest request)
-      where TRequest : JetRequest
+    private async Task<TResponse> ExecuteAuthenticatedRequestAsync<TResponse>(IJetRequest request)
+    {
+      await AuthenticateIfNecessaryAsync().ConfigureAwait(false);
+
+      return await ExecuteRequestAsync<TResponse>(request).ConfigureAwait(false);
+    }
+
+    private async Task<IRestResponse> ExecuteAuthenticatedRequestAsync(IJetRequest request)
+    {
+      await AuthenticateIfNecessaryAsync().ConfigureAwait(false);
+
+      return await ExecuteRequestAsync(request).ConfigureAwait(false);
+    }
+
+    private async Task AuthenticateIfNecessaryAsync()
+    {
+      if (!Authenticator?.IsTokenValid ?? false)
+        await AuthenticateAsync(Credentials).ConfigureAwait(false);
+    }
+
+    private async Task<TResponse> ExecuteRequestAsync<TResponse>(IJetRequest request)
+    {
+      var response = await ExecuteRequestAsync(request).ConfigureAwait(false);
+
+      return JsonConvert.DeserializeObject<TResponse>(response.Content);
+    }
+
+    private async Task<IRestResponse> ExecuteRequestAsync(IJetRequest request)
     {
       var response = await RestClient.ExecuteTaskAsync(
         new RestRequest(request.Resource, request.Method)
-        { JsonSerializer = Serializer }
-          .AddJsonBody(request)).ConfigureAwait(false);
+          { JsonSerializer = Serializer }
+            .AddJsonBody(request.Body)).ConfigureAwait(false);
 
       CheckResponseStatusCode(response);
 
-      return JsonConvert.DeserializeObject<TResponse>(response.Content);
+      return response;
     }
 
     private static void CheckResponseStatusCode(IRestResponse response)
@@ -102,7 +132,7 @@ namespace JetSharp
       switch (response.StatusCode)
       {
         case HttpStatusCode.BadRequest:
-          throw new HttpException((int)response.StatusCode, response.StatusDescription);
+          throw new HttpException((int)response.StatusCode, response.Content);
         case HttpStatusCode.Unauthorized:
           throw new AuthenticationException();
       }
